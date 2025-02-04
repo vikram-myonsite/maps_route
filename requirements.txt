@@ -2,3 +2,4 @@ flask
 openrouteservice
 requests
 gunicorn
+folium

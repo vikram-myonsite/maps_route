@@ -1,6 +1,5 @@
 import openrouteservice
 import folium
-import os
 from flask import Flask, request, jsonify
 
 # Initialize Flask app

@@ -1,43 +1,122 @@
 import openrouteservice
-from openrouteservice import convert
 import folium
-from folium import GeoJson
+import os
+from flask import Flask, request, jsonify
 
-# Initialize the client with your API key
-client = openrouteservice.Client(key='5b3ce3597851110001cf62484051ea57a35a442c9a50c4a8be0c9cff')
+# Initialize Flask app
+app = Flask(__name__)
 
-# Define coordinates (latitude, longitude)
-start_coords = (77.5385, 8.0883)  # Los Angeles (Longitude, Latitude)
-end_coords = (74.7973, 34.0836)       # Los Angeles
+# Load OpenRouteService API key from environment variable
+openroute_api_key = "5b3ce3597851110001cf62484051ea57a35a442c9a50c4a8be0c9cff"
+client = openrouteservice.Client(key=openroute_api_key)
+# Route to get distance, duration, and map based on input coordinates (GET method)
+@app.route('/get-route', methods=['GET'])
+def get_route():
+    try:
+        # Get lat/lon from query parameters
+        start_lat = request.args.get("start_lat", type=float)
+        start_lon = request.args.get("start_lon", type=float)
+        end_lat = request.args.get("end_lat", type=float)
+        end_lon = request.args.get("end_lon", type=float)
 
-try:
-    # Get the route between two points
-    route = client.directions(
-        coordinates=[start_coords, end_coords],
-        profile='driving-car',  # for car driving
-        format='geojson'
-    )
-    
-    # Extract distance and duration
-    distance = route['features'][0]['properties']['segments'][0]['distance']  # in meters
-    duration = route['features'][0]['properties']['segments'][0]['duration']/(60*60) # in seconds
-    
-    print(f"Distance: {distance} meters")
-    print(f"Duration: {duration} hours")
+        if None in [start_lat, start_lon, end_lat, end_lon]:
+            return jsonify({"error": "Missing latitude or longitude parameters"}), 400
 
-    map_center = [start_coords[1], start_coords[0]]  # [lat, lon]
-    m = folium.Map(location=map_center, zoom_start=6)
+        # Define coordinates for OpenRouteService
+        start_coords = (start_lon, start_lat)  # OpenRouteService requires (longitude, latitude)
+        end_coords = (end_lon, end_lat)
 
-    # Add route to map using GeoJSON
-    folium.GeoJson(route).add_to(m)
+        # Fetch route from OpenRouteService
+        route = client.directions(
+            coordinates=[start_coords, end_coords],
+            profile="driving-car",
+            format="geojson"
+        )
 
-    # Add a marker for the start and end locations
-    folium.Marker(location=[start_coords[1], start_coords[0]], popup='Start').add_to(m)
-    folium.Marker(location=[end_coords[1], end_coords[0]], popup='End').add_to(m)
+        # Extract distance & duration
+        distance = route["features"][0]["properties"]["segments"][0]["distance"] / 1000  # Convert meters to km
+        duration = route["features"][0]["properties"]["segments"][0]["duration"] / 3600  # Convert seconds to hours
 
-    # Save the map as an HTML file
-    m.save("route_map.html")
-    print("Map has been saved as 'route_map.html'")
+        # Generate Folium map
+        map_center = [start_lat, start_lon]
+        m = folium.Map(location=map_center, zoom_start=6)
+        folium.GeoJson(route).add_to(m)
+        folium.Marker([start_lat, start_lon], popup="Start").add_to(m)
+        folium.Marker([end_lat, end_lon], popup="End").add_to(m)
+        
+        # Save map as an HTML file
+        map_filename = "route_map.html"
+        m.save(map_filename)
 
-except Exception as e:
-    print(f"An error occurred: {e}")
+        # Return JSON response
+        return jsonify({
+            "distance_km": round(distance, 2),
+            "duration_hours": round(duration, 2),
+            "map_url": f"https://your-api.onrender.com/{map_filename}"
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# Route to handle POST request with JSON data (POST method)
+@app.route('/get-route', methods=['POST'])
+def post_route():
+    try:
+        # Get JSON data from POST request
+        data = request.get_json()
+
+        start_lat = data.get("start_lat")
+        start_lon = data.get("start_lon")
+        end_lat = data.get("end_lat")
+        end_lon = data.get("end_lon")
+
+        if None in [start_lat, start_lon, end_lat, end_lon]:
+            return jsonify({"error": "Missing latitude or longitude in JSON"}), 400
+
+        # Define coordinates for OpenRouteService
+        start_coords = (start_lon, start_lat)  # OpenRouteService requires (longitude, latitude)
+        end_coords = (end_lon, end_lat)
+
+        # Fetch route from OpenRouteService
+        route = client.directions(
+            coordinates=[start_coords, end_coords],
+            profile="driving-car",
+            format="geojson"
+        )
+
+        # Extract distance & duration
+        distance = route["features"][0]["properties"]["segments"][0]["distance"] / 1000  # Convert meters to km
+        duration = route["features"][0]["properties"]["segments"][0]["duration"] / 3600  # Convert seconds to hours
+
+        # Generate Folium map
+        map_center = [start_lat, start_lon]
+        m = folium.Map(location=map_center, zoom_start=6)
+        folium.GeoJson(route).add_to(m)
+        folium.Marker([start_lat, start_lon], popup="Start").add_to(m)
+        folium.Marker([end_lat, end_lon], popup="End").add_to(m)
+        
+        # Save map as an HTML file
+        map_filename = "route_map.html"
+        m.save(map_filename)
+
+        # Return JSON response
+        return jsonify({
+            "distance_km": round(distance, 2),
+            "duration_hours": round(duration, 2),
+            "map_url": f"https://your-api.onrender.com/{map_filename}"
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# Home route
+@app.route("/")
+def home():
+    return jsonify({"message": "Welcome to the Route API! Use /get-route with lat/lon parameters."})
+
+
+# Run Flask app
+if __name__ == "__main__":
+    app.run(debug=True)

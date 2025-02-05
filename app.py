@@ -9,7 +9,7 @@ app = Flask(__name__)
 openroute_api_key = "5b3ce3597851110001cf62484051ea57a35a442c9a50c4a8be0c9cff"
 client = openrouteservice.Client(key=openroute_api_key)
 # Route to get distance, duration, and map based on input coordinates (GET method)
-@app.route('/get-route', methods=['GET'])
+@app.route('/', methods=['GET'])
 def get_route():
     try:
         # Get lat/lon from query parameters
@@ -59,7 +59,7 @@ def get_route():
 
 
 # Route to handle POST request with JSON data (POST method)
-@app.route('/get-route', methods=['POST'])
+@app.route('/', methods=['POST'])
 def post_route():
     try:
         # Get JSON data from POST request
@@ -108,12 +108,6 @@ def post_route():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-# Home route
-@app.route("/")
-def home():
-    return jsonify({"message": "Welcome to the Route API! Use /get-route with lat/lon parameters."})
 
 
 # Run Flask app

@@ -36,22 +36,12 @@ def get_route():
         distance = route["features"][0]["properties"]["segments"][0]["distance"] / 1000  # Convert meters to km
         duration = route["features"][0]["properties"]["segments"][0]["duration"] / 3600  # Convert seconds to hours
 
-        # Generate Folium map
-        map_center = [start_lat, start_lon]
-        m = folium.Map(location=map_center, zoom_start=6)
-        folium.GeoJson(route).add_to(m)
-        folium.Marker([start_lat, start_lon], popup="Start").add_to(m)
-        folium.Marker([end_lat, end_lon], popup="End").add_to(m)
-        
-        # Save map as an HTML file
-        map_filename = "route_map.html"
-        m.save(map_filename)
+
 
         # Return JSON response
         return jsonify({
             "distance_km": round(distance, 2),
-            "duration_hours": round(duration, 2),
-            "map_url": f"https://your-api.onrender.com/{map_filename}"
+            "duration_hours": round(duration, 2)
         })
 
     except Exception as e:
@@ -88,22 +78,13 @@ def post_route():
         distance = route["features"][0]["properties"]["segments"][0]["distance"] / 1000  # Convert meters to km
         duration = route["features"][0]["properties"]["segments"][0]["duration"] / 3600  # Convert seconds to hours
 
-        # Generate Folium map
-        map_center = [start_lat, start_lon]
-        m = folium.Map(location=map_center, zoom_start=6)
-        folium.GeoJson(route).add_to(m)
-        folium.Marker([start_lat, start_lon], popup="Start").add_to(m)
-        folium.Marker([end_lat, end_lon], popup="End").add_to(m)
         
-        # Save map as an HTML file
-        map_filename = "route_map.html"
-        m.save(map_filename)
+      
 
         # Return JSON response
         return jsonify({
             "distance_km": round(distance, 2),
-            "duration_hours": round(duration, 2),
-            "map_url": f"https://your-api.onrender.com/{map_filename}"
+            "duration_hours": round(duration, 2)
         })
 
     except Exception as e:
